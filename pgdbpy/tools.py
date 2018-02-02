@@ -96,12 +96,14 @@ class PgDbPy(object):
 
 		if cursortype:
 			if cursortype == 'dict':
+				self.cursortype = cursortype
 				#cnxstr = "cursor_factory=psycopg2.extras.RealDictCursor {}".format(cnxstr)
 				self.conn = psycopg2.connect(cursor_factory=psycopg2.extras.RealDictCursor, dsn=dsn)
 			else:
 				raise ValueError("valid cursor types are 'dict'")
 
 		else:
+			self.cursortype = 'plain'
 			self.conn = psycopg2.connect(cnxstr)
 
 	def execute(self, fetchcommand, sql, params=None):
@@ -109,7 +111,7 @@ class PgDbPy(object):
 
 		cur = self.conn.cursor()
 		if params:
-			if not type(cfg).__name__ == 'tuple':
+			if not type(params).__name__ == 'tuple':
 				raise ValueError('the params argument needs to be a tuple')
 				return None
 			cur.execute(sql, params)
@@ -118,16 +120,25 @@ class PgDbPy(object):
 
 		self.conn.commit()
 
-		m = insertion_pattern.match(sql)
-		if m:
-			""" lastid = cursor.fetchone()['lastval'] """
-			lastid = cur.fetchone()['lastval']
-			self.conn.commit()
-			return lastid
-
 		if not fetchcommand or fetchcommand == 'none':
 			return
-		elif fetchcommand == 'fetchone' or fetchcommand == 'one':
+
+		if fetchcommand == 'last' or fetchcommand == 'lastid':
+			lastdata = cur.fetchone()
+			self.conn.commit()
+			return lastdata
+
+		m = insertion_pattern.match(sql)
+		"""
+		 TODO: This is a BUG - need to also check tail of query for RETURNING
+		"""
+		if m:
+			""" lastid = cursor.fetchone()['lastval'] """
+			lastdata = cur.fetchone()
+			self.conn.commit()
+			return lastdata
+
+		if fetchcommand == 'fetchone' or fetchcommand == 'one':
 			return cur.fetchone()
 		elif fetchcommand == 'fetchall' or fetchcommand == 'all':
 			return cur.fetchall()
