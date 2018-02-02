@@ -9,6 +9,7 @@ import psycopg2.extras
 DEFAULT_PORT = 5432
 """ 'postgresql+psycopg2://scott:tiger@localhost/mydatabase' """
 dburl_pattern = re.compile(r'^([^:]+)://([^:]+):([^@]+)@([^/]+)/([^\s]+)')
+insertion_pattern = re.compile(r'^insert.*$', re.IGNORECASE)
 
 class PgDbPy(object):
 
@@ -116,7 +117,17 @@ class PgDbPy(object):
 			cur.execute(sql)
 
 		self.conn.commit()
-		if fetchcommand == 'fetchone' or fetchcommand == 'one':
+
+		m = insertion_pattern.match(sql)
+		if m:
+			""" lastid = cursor.fetchone()['lastval'] """
+			lastid = cur.fetchone()['lastval']
+			self.conn.commit()
+			return lastid
+
+		if not fetchcommand or fetchcommand == 'none':
+			return
+		elif fetchcommand == 'fetchone' or fetchcommand == 'one':
 			return cur.fetchone()
 		elif fetchcommand == 'fetchall' or fetchcommand == 'all':
 			return cur.fetchall()
