@@ -103,11 +103,18 @@ class PgDbPy(object):
 		else:
 			self.conn = psycopg2.connect(cnxstr)
 
-	def execute(self, fetchcommand, sql):
+	def execute(self, fetchcommand, sql, params=None):
 		""" where 'fetchcommand' is either 'fetchone' or 'fetchall' """
 
 		cur = self.conn.cursor()
-		cur.execute(sql)
+		if params:
+			if not type(cfg).__name__ == 'tuple':
+				raise ValueError('the params argument needs to be a tuple')
+				return None
+			cur.execute(sql, params)
+		else:
+			cur.execute(sql)
+
 		self.conn.commit()
 		if fetchcommand == 'fetchone' or fetchcommand == 'one':
 			return cur.fetchone()
