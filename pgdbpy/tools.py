@@ -124,7 +124,7 @@ class PgDbPy(object):
 			return
 
 		if fetchcommand == 'last' or fetchcommand == 'lastid':
-			lastdata = cur.fetchone()
+			lastdata = cur.fetchall()
 			self.conn.commit()
 			return lastdata
 
