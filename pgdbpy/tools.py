@@ -32,7 +32,8 @@ class PgDbPy(object):
 		"""
 
 		if not cfg_dict[datasource_identifier]:
-			raise ValueError('datasource identifier not found in configuration: {}'.format(datasource_identifier))
+			msg = 'datasource identifier not found in configuration: {}'
+			raise ValueError(msg.format(datasource_identifier))
 			sys.exit(1)
 
 		datasource = cfg_dict[datasource_identifier]
@@ -98,7 +99,8 @@ class PgDbPy(object):
 			if cursortype == 'dict':
 				self.cursortype = cursortype
 				#cnxstr = "cursor_factory=psycopg2.extras.RealDictCursor {}".format(cnxstr)
-				self.conn = psycopg2.connect(cursor_factory=psycopg2.extras.RealDictCursor, dsn=dsn)
+				self.conn = psycopg2.connect(
+					cursor_factory=psycopg2.extras.RealDictCursor, dsn=dsn)
 			else:
 				raise ValueError("valid cursor types are 'dict'")
 
@@ -143,7 +145,13 @@ class PgDbPy(object):
 		elif fetchcommand == 'fetchall' or fetchcommand == 'all':
 			return cur.fetchall()
 		else:
-			raise ValueError("expecting <fetchcommand> argument to be either 'fetchone'|'one'|'fetchall|all'")
+			msg = "expecting <fetchcommand> argument to be either 'fetchone'|'one'|'fetchall|all'"
+			raise ValueError(msg)
+
+
+	def get_table_rowcount(self, tablename):
+
+		return self.execute('one', 'SELECT COUNT(*) FROM {}'.format(tablename), None)
 
 
 class PgDb(PgDbPy):
