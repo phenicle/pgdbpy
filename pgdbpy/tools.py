@@ -151,13 +151,13 @@ class PgDbPy(object):
 
 	def get_table_rowcount(self, tablename):
 
-		return self.execute('one', 'SELECT COUNT(*) FROM {}'.format(tablename), None)
+		return self.execute('one', 'SELECT COUNT(*) FROM {}'.format(tablename), None)[0]
 
 
 	def get_query_result_set_rowcount(self, sql):
 
 		newsql = "SELECT COUNT(*) FROM ({}) AS q".format(sql)
-		return self.execute('one', newsql, None)
+		return self.execute('one', newsql, None)[0]
 
 
 class PgDb(PgDbPy):
