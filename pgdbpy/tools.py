@@ -154,6 +154,12 @@ class PgDbPy(object):
 		return self.execute('one', 'SELECT COUNT(*) FROM {}'.format(tablename), None)
 
 
+	def get_query_result_set_rowcount(self, sql):
+
+		newsql = "SELECT COUNT(*) FROM ({}) AS q".format(sql)
+		return self.execute('one', newsql, None)
+
+
 class PgDb(PgDbPy):
 
 	def __init__(self, cfg, datasource_identifier, cursor_type=None):
