@@ -106,7 +106,7 @@ class PgDbPy(object):
 
 		else:
 			self.cursortype = 'plain'
-			self.conn = psycopg2.connect(cnxstr)
+			self.conn = psycopg2.connect(dsn)
 
 	def execute(self, fetchcommand, sql, params=None):
 		""" where 'fetchcommand' is either 'fetchone' or 'fetchall' """
