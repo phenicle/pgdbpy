@@ -7,9 +7,12 @@ import psycopg2
 import psycopg2.extras
 
 DEFAULT_PORT = 5432
+DEFAULT_CURSORTYPE = 'tuple'
 """ 'postgresql+psycopg2://scott:tiger@localhost/mydatabase' """
 dburl_pattern = re.compile(r'^([^:]+)://([^:]+):([^@]+)@([^/]+)/([^\s]+)')
 insertion_pattern = re.compile(r'^insert.*$', re.IGNORECASE)
+whereclause_pattern = re.compile(	r'\b({0})\b'.format('where'), 
+									flags=re.IGNORECASE)
 
 class PgDbPy(object):
 
@@ -95,18 +98,18 @@ class PgDbPy(object):
 		dsn = "dbname='{}' user='{}' host='{}' port='{}' password='{}'".format(
 			self.dbname, self.user, self.host, self.port, self.password)
 
+		self.cursortype = DEFAULT_CURSORTYPE
 		if cursortype:
 			if cursortype == 'dict':
 				self.cursortype = cursortype
 				#cnxstr = "cursor_factory=psycopg2.extras.RealDictCursor {}".format(cnxstr)
 				self.conn = psycopg2.connect(
 					cursor_factory=psycopg2.extras.RealDictCursor, dsn=dsn)
+			elif cursortype == 'tuple' or cursortype == 'plain':
+				self.cursortype = cursortype
+				self.conn = psycopg2.connect(dsn)
 			else:
-				raise ValueError("valid cursor types are 'dict'")
-
-		else:
-			self.cursortype = 'plain'
-			self.conn = psycopg2.connect(dsn)
+				raise ValueError("valid cursor types are 'dict', and 'plain' or 'tuple'")
 
 	def execute(self, fetchcommand, sql, params=None):
 		""" where 'fetchcommand' is either 'fetchone' or 'fetchall' """
@@ -158,6 +161,59 @@ class PgDbPy(object):
 
 		newsql = "SELECT COUNT(*) FROM ({}) AS q".format(sql)
 		return self.execute('one', newsql, None)[0]
+
+	def fetch_data_window_endposts(tablename, primkey, winsz, firstpk=None):
+
+		if firstpk:
+			sql = """
+(
+SELECT {} FROM {}
+WHERE {} > {}
+ORDER BY {} LIMIT {}
+)
+UNION ALL
+(
+SELECT {} FROM {}
+WHERE {} > {}
+ORDER BY {} DESC LIMIT {}
+)
+			""".format(
+				primkey,
+				tablename,
+				primkey,
+				firstpk,
+				primkey,
+				winsz,
+				primkey,
+				tablename,
+				primkey,
+				firstkey,
+				primkey,
+				winsz
+				)
+		else:
+
+			sql = """
+(
+SELECT {} FROM {} 
+ORDER BY {} LIMIT {}
+)
+UNION ALL
+(
+SELECT {} FROM {} 
+ORDER BY {} DESC LIMIT {}
+)
+			""".format(
+				primkey,
+				tablename,
+				primkey,
+				winsz
+				)
+		cur = self.conn.cursor()
+		cur.execute(sql)
+		result = cur.fetchall()
+		self.conn.commit()
+		return result
 
 
 class PgDb(PgDbPy):
