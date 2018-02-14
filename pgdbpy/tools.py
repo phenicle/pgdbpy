@@ -42,7 +42,6 @@ class PgDbPy(object):
 			sys.exit(1)
 
 		self.data_window_size = DEFAULT_DATA_WINDOW_SIZE
-		self.sleep_time = DEFAULT_SLEEP_TIME
 		if MYNAME in cfg.cfg_dict:
 			module_cfgdict = cfg.cfg_dict[MYNAME]
 			if 'data_window_size' in module_cfgdict:
