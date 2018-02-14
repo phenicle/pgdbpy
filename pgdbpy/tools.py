@@ -170,7 +170,7 @@ class PgDbPy(object):
 		newsql = "SELECT COUNT(*) FROM ({}) AS q".format(sql)
 		return self.execute('one', newsql, None)[0]
 
-	def fetch_data_window_endposts(tablename, primkey, winsz, firstpk=None):
+	def fetch_data_window_endposts(self, tablename, primkey, winsz, firstpk=None):
 
 		if firstpk:
 			sql = """
