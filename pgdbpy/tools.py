@@ -215,6 +215,10 @@ ORDER BY {} DESC LIMIT {}
 				primkey,
 				tablename,
 				primkey,
+				winsz,
+				primkey,
+				tablename,
+				primkey,
 				winsz
 				)
 		cur = self.conn.cursor()
