@@ -174,52 +174,55 @@ class PgDbPy(object):
 
 		if firstpk:
 			sql = """
+WITH q AS
 (
 SELECT {} FROM {}
 WHERE {} > {}
 ORDER BY {} LIMIT {}
 )
+(
+ SELECT {} FROM q ORDER BY {} LIMIT 1
+)
 UNION ALL
 (
-SELECT {} FROM {}
-WHERE {} > {}
-ORDER BY {} DESC LIMIT {}
+ SELECT {} FROM q ORDER BY {} desc LIMIT 1
 )
 			""".format(
-				primkey,
-				tablename,
-				primkey,
-				firstpk,
-				primkey,
-				winsz,
-				primkey,
-				tablename,
-				primkey,
-				firstpk,
-				primkey,
-				winsz
+					primkey,
+					tablename,
+					primkey,
+					firstpk,
+					primkey,
+					winsz,
+					primkey,
+					primkey,
+					primkey,
+					primkey
 				)
 		else:
 
 			sql = """
+WITH q AS
 (
-SELECT {} FROM {} 
+SELECT {} FROM {}
 ORDER BY {} LIMIT {}
+)
+(
+ SELECT {} FROM q ORDER BY {} LIMIT 1
 )
 UNION ALL
 (
-SELECT {} FROM {} 
-ORDER BY {} DESC LIMIT {}
+ SELECT {} FROM q ORDER BY {} desc LIMIT 1
 )
 			""".format(
-				primkey,
-				tablename,
-				primkey,
-				winsz,
-				primkey,
-				tablename,
-				primkey,
-				winsz
+					primkey,
+					tablename,
+					primkey,
+					winsz,
+					primkey,
+					primkey,
+					primkey,
+					primkey
 				)
 		cur = self.conn.cursor()
 		cur.execute(sql)
