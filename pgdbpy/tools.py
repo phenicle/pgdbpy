@@ -6,8 +6,10 @@ import re
 import psycopg2
 import psycopg2.extras
 
+MYNAME = 'pgdbpy'
 DEFAULT_PORT = 5432
 DEFAULT_CURSORTYPE = 'tuple'
+DEFAULT_DATA_WINDOW_SIZE = 0
 """ 'postgresql+psycopg2://scott:tiger@localhost/mydatabase' """
 dburl_pattern = re.compile(r'^([^:]+)://([^:]+):([^@]+)@([^/]+)/([^\s]+)')
 insertion_pattern = re.compile(r'^insert.*$', re.IGNORECASE)
@@ -38,6 +40,13 @@ class PgDbPy(object):
 			msg = 'datasource identifier not found in configuration: {}'
 			raise ValueError(msg.format(datasource_identifier))
 			sys.exit(1)
+
+		self.data_window_size = DEFAULT_DATA_WINDOW_SIZE
+		self.sleep_time = DEFAULT_SLEEP_TIME
+		if MYNAME in cfg.cfg_dict:
+			module_cfgdict = cfg.cfg_dict[MYNAME]
+			if 'data_window_size' in module_cfgdict:
+				self.data_window_size = int(module_cfgdict['data_window_size'])
 
 		datasource = cfg_dict[datasource_identifier]
 
@@ -187,7 +196,7 @@ ORDER BY {} DESC LIMIT {}
 				primkey,
 				tablename,
 				primkey,
-				firstkey,
+				firstpk,
 				primkey,
 				winsz
 				)
@@ -225,7 +234,7 @@ class PgDb(PgDbPy):
 
 if __name__ == "__main__":
 
-	# from pycfg.tools import Cfg
+	# from cfgpy.tools import Cfg, FMT_INI
 	# from pgdbpy.tools import PgDb
 	pgdb = PgDb( Cfg(FMT_INI, None, ['./config.ini']), 'mydatasource', 'dict' )
 
