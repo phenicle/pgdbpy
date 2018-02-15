@@ -5,6 +5,10 @@ from cfgpy.tools import FMT_INI, Cfg
 import re
 import psycopg2
 import psycopg2.extras
+import pprint
+
+DEBUGGING = False
+pp = pprint.PrettyPrinter(indent=4)
 
 MYNAME = 'pgdbpy'
 DEFAULT_PORT = 5432
@@ -13,12 +17,11 @@ DEFAULT_DATA_WINDOW_SIZE = 0
 """ 'postgresql+psycopg2://scott:tiger@localhost/mydatabase' """
 dburl_pattern = re.compile(r'^([^:]+)://([^:]+):([^@]+)@([^/]+)/([^\s]+)')
 insertion_pattern = re.compile(r'^insert.*$', re.IGNORECASE)
-whereclause_pattern = re.compile(	r'\b({0})\b'.format('where'), 
-									flags=re.IGNORECASE)
+whereclause_pattern = re.compile(r'\b({0})\b'.format('where'), flags=re.IGNORECASE)
 
 class PgDbPy(object):
 
-	def __init__(self, cfg, datasource_identifier, cursortype=None):
+	def __init__(self, cfg, datasource_identifier, cursortype=DEFAULT_CURSORTYPE):
 
 		if not type(cfg).__name__ == 'CfgPy' and not type(cfg).__name__ == 'Cfg':
 			raise ValueError('expecting configuration to be a Cfg or CfgPy object')
@@ -26,6 +29,12 @@ class PgDbPy(object):
 
 		self.cfg = cfg
 		cfg_dict = cfg.get_config()
+		"""
+		workaround for explicitly being passed 'None' as cursortype
+		"""
+		if cursortype == None:
+			cursortype = DEFAULT_CURSORTYPE
+
 		"""
 		 expecting the configuration to either provide
 		 datasource url ala sqlalchemy conn, 
@@ -35,7 +44,6 @@ class PgDbPy(object):
 		 or provide individual elements ala psycopg2
 		  'dbname' 'host' 'user' 'password'
 		"""
-
 		if not cfg_dict[datasource_identifier]:
 			msg = 'datasource identifier not found in configuration: {}'
 			raise ValueError(msg.format(datasource_identifier))
@@ -103,21 +111,27 @@ class PgDbPy(object):
 		if not 'port' in self.__dict__:
 			self.port = DEFAULT_PORT
 
-		dsn = "dbname='{}' user='{}' host='{}' port='{}' password='{}'".format(
-			self.dbname, self.user, self.host, self.port, self.password)
+		if 'password' in self.__dict__ and not self.password == None:
+			dsn = "dbname='{}' user='{}' host='{}' port='{}' password='{}'".format(
+				self.dbname, self.user, self.host, self.port, self.password)
+		else:
+			dsn = "dbname='{}' user='{}' host='{}' port='{}'".format(
+				self.dbname, self.user, self.host, self.port)
 
-		self.cursortype = DEFAULT_CURSORTYPE
-		if cursortype:
-			if cursortype == 'dict':
-				self.cursortype = cursortype
-				#cnxstr = "cursor_factory=psycopg2.extras.RealDictCursor {}".format(cnxstr)
-				self.conn = psycopg2.connect(
-					cursor_factory=psycopg2.extras.RealDictCursor, dsn=dsn)
-			elif cursortype == 'tuple' or cursortype == 'plain':
-				self.cursortype = cursortype
-				self.conn = psycopg2.connect(dsn)
-			else:
-				raise ValueError("valid cursor types are 'dict', and 'plain' or 'tuple'")
+		dbh = None
+		self.cursortype = cursortype
+		# default value of cursortype arg established via argv
+		if cursortype == 'dict':
+			dbh = psycopg2.connect(cursor_factory=psycopg2.extras.RealDictCursor, dsn=dsn)
+		elif cursortype == 'tuple' or cursortype == 'plain':
+			dbh = psycopg2.connect(dsn)
+		else:
+			raise ValueError("valid cursor types are 'dict', and 'plain' or 'tuple'")
+
+		self.conn = dbh
+		if self.conn == None:
+			raise ValueError('connect failed')
+			
 
 	def execute(self, fetchcommand, sql, params=None):
 		""" where 'fetchcommand' is either 'fetchone' or 'fetchall' """
